@@ -2,20 +2,20 @@ const request = require("supertest");
 const { app } = require("../server");
 const jwt = require("jsonwebtoken");
 const config = require("../config");
-const mongoose = require("mongoose");
 const mockingoose = require("mockingoose");
 const User = require("../api/users/users.model");
 const usersService = require("../api/users/users.service");
 
 describe("tester API users", () => {
   let token;
-  const USER_ID = "fake";
+  const USER_ID = "507f1f77bcf86cd799439011";
   const MOCK_DATA = [
     {
       _id: USER_ID,
       name: "ana",
       email: "nfegeg@gmail.com",
       password: "azertyuiop",
+      role: "admin",
     },
   ];
   const MOCK_DATA_CREATED = {
@@ -24,10 +24,18 @@ describe("tester API users", () => {
     password: "azertyuiop",
   };
 
+  // mock de l'utilisateur pour le middleware auth (findById)
+  const MOCK_AUTH_USER = {
+    _id: USER_ID,
+    name: "ana",
+    email: "nfegeg@gmail.com",
+    role: "admin",
+  };
+
   beforeEach(() => {
     token = jwt.sign({ userId: USER_ID }, config.secretJwtToken);
-    // mongoose.Query.prototype.find = jest.fn().mockResolvedValue(MOCK_DATA);
     mockingoose(User).toReturn(MOCK_DATA, "find");
+    mockingoose(User).toReturn(MOCK_AUTH_USER, "findOne");
     mockingoose(User).toReturn(MOCK_DATA_CREATED, "save");
   });
 
@@ -60,5 +68,6 @@ describe("tester API users", () => {
 
   afterEach(() => {
     jest.restoreAllMocks();
+    mockingoose.resetAll();
   });
 });

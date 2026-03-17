@@ -5,8 +5,9 @@ const cors = require("cors");
 const NotFoundError = require("./errors/not-found");
 const userRouter = require("./api/users/users.router");
 const usersController = require("./api/users/users.controller");
+const articleRouter = require("./api/articles/articles.router");
 const authMiddleware = require("./middlewares/auth");
-require("./api/articles/articles.schema"); // temporaire
+require("./api/articles/articles.schema");
 const app = express();
 
 const server = http.createServer(app);
@@ -14,10 +15,6 @@ const io = new Server(server);
 
 io.on("connection", (socket) => {
   console.log("a user connected");
-  /*socket.on("my_event", (data) => {
-    console.log(data);
-  });
-  io.emit("event_from_server", { test: "foo" });*/
 });
 
 app.use((req, res, next) => {
@@ -28,8 +25,23 @@ app.use((req, res, next) => {
 app.use(cors());
 app.use(express.json());
 
-app.use("/api/users", authMiddleware, userRouter);
+// route publique : login
 app.post("/login", usersController.login);
+
+// route publique : articles d'un utilisateur (pas besoin d'être connecté)
+const articlesService = require("./api/articles/articles.service");
+app.get("/api/users/:userId/articles", async (req, res, next) => {
+  try {
+    const articles = await articlesService.getByUser(req.params.userId);
+    res.json(articles);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// routes protégées (middleware auth)
+app.use("/api/users", authMiddleware, userRouter);
+app.use("/api/articles", authMiddleware, articleRouter);
 
 app.use("/", express.static("public"));
 
